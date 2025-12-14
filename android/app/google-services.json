@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "785123061936",
+    "project_id": "cse464",
+    "storage_bucket": "cse464.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:785123061936:android:7c38a649a5cedfcba44b75",
+        "android_client_info": {
+          "package_name": "com.shop0.inventory"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCVOVjBZF-cVOfPWNyoEHQDnaVefTOFzSI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
