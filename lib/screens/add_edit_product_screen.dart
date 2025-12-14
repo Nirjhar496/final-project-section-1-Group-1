@@ -1,10 +1,11 @@
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/product.dart';
 import '../providers/inventory_provider.dart';
 
 class AddEditProductScreen extends StatefulWidget {
+  static const routeName = '/add-edit-product';
   final Product? product;
 
   const AddEditProductScreen({super.key, this.product});
@@ -50,16 +51,18 @@ class _AddEditProductScreenState extends State<AddEditProductScreen> {
             quantity: _quantity,
             category: _category,
             imageUrl: _imageUrl,
+            createdAt: widget.product!.createdAt,
           ),
         );
       } else {
         inventoryProvider.addProduct(
           Product(
-            id: DateTime.now().toString(),
+            id: '', // Firestore will generate ID
             name: _name,
             quantity: _quantity,
             category: _category,
             imageUrl: _imageUrl,
+            createdAt: Timestamp.now(),
           ),
         );
       }
