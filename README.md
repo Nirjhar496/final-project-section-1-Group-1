@@ -1,6 +1,14 @@
-# inventory
+# Inventory Management App
 
-A new Flutter project.
+A Flutter application for managing inventory, using Firebase as the backend.
+
+## Features
+
+- **Real-time database:** Cloud Firestore is used to store and sync data in real-time.
+- **CRUD Operations:** Add, edit, and delete products from the inventory.
+- **Provider State Management:** The `provider` package is used to manage the application's state.
+- **Filtering and Searching:** Users can search for products by name and filter by category.
+- **Dashboard Summary:** The dashboard displays a summary of the inventory, including the total number of products and the total quantity.
 
 ## Getting Started
 
