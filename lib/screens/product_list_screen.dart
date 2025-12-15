@@ -1,96 +1,188 @@
 import 'package:flutter/material.dart';
+import 'package:inventory/providers/inventory_provider.dart';
+import 'package:inventory/widgets/add_edit_product_sheet.dart';
+import 'package:inventory/widgets/product_grid_item.dart';
+import 'package:inventory/widgets/product_list_item.dart';
+import 'package:inventory/widgets/responsive.dart';
 import 'package:provider/provider.dart';
-import '../providers/inventory_provider.dart';
-import '../widgets/product_detail_modal.dart';
-import 'add_edit_product_screen.dart';
+import 'package:inventory/models/product.dart';
 
-class ProductListScreen extends StatelessWidget {
+class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
+
+  @override
+  State<ProductListScreen> createState() => _ProductListScreenState();
+}
+
+class _ProductListScreenState extends State<ProductListScreen> {
+  final _searchController = TextEditingController();
+  String _selectedCategory = 'All';
+  final _listKey = GlobalKey<AnimatedListState>();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showAddEditSheet({Product? product}) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder: (_) => AddEditProductSheet(product: product),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Products'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () {
-              Navigator.of(context).pushNamed(AddEditProductScreen.routeName);
-            },
-          ),
-        ],
       ),
-      body: StatefulBuilder(
-        builder: (BuildContext context, StateSetter setState) {
-          String _searchQuery = '';
-          String _selectedCategory = 'All';
-
-          return Consumer<InventoryProvider>(
-            builder: (context, inventoryProvider, child) {
-              final products = inventoryProvider.getFilteredProducts(_searchQuery, _selectedCategory);
-
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'Search by name',
-                        prefixIcon: Icon(Icons.search),
-                      ),
-                      onChanged: (value) {
-                        setState(() {
-                          _searchQuery = value;
-                        });
-                      },
-                    ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                    child: DropdownButton<String>(
-                      value: _selectedCategory,
-                      isExpanded: true,
-                      items: inventoryProvider.categories.map((String category) {
-                        return DropdownMenuItem<String>(
-                          value: category,
-                          child: Text(category),
-                        );
-                      }).toList(),
-                      onChanged: (String? newValue) {
-                        setState(() {
-                          _selectedCategory = newValue!;
-                        });
-                      },
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: products.length,
-                      itemBuilder: (context, index) {
-                        final product = products[index];
-                        return ListTile(
-                          title: Text(product.name),
-                          subtitle: Text('Category: ${product.category}'),
-                          trailing: Text('Qty: ${product.quantity}'),
-                          onTap: () {
-                            showModalBottomSheet(
-                              context: context,
-                              builder: (context) {
-                                return ProductDetailModal(product: product);
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            },
-          );
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _showAddEditSheet,
+        label: const Text('Add Product'),
+        icon: const Icon(Icons.add),
+        heroTag: 'add-product-fab',
+      ),
+      body: Consumer<InventoryProvider>(
+        builder: (context, provider, child) {
+          switch (provider.dataState) {
+            case DataState.loading:
+              return const Center(child: CircularProgressIndicator());
+            case DataState.error:
+              return Center(child: Text('Error: ${provider.errorMessage}'));
+            case DataState.success:
+              return _buildProductList(context, provider);
+          }
         },
       ),
     );
   }
+
+  Widget _buildProductList(BuildContext context, InventoryProvider provider) {
+    final filteredProducts =
+        provider.getFilteredProducts(_searchController.text, _selectedCategory);
+
+    if (provider.products.isEmpty) {
+      return const Center(
+        child: Text(
+          'No products yet. Tap "Add Product" to start!',
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        _buildFilterControls(provider),
+        Expanded(
+          child: filteredProducts.isEmpty
+              ? const Center(child: Text('No products found.'))
+              : Responsive(
+                  mobile: _ProductListView(
+                      listKey: _listKey, products: filteredProducts),
+                  tablet: _ProductGridView(products: filteredProducts),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Padding _buildFilterControls(InventoryProvider provider) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              labelText: 'Search by name',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _searchController.text.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _searchController.clear();
+                        setState(() {});
+                      },
+                    )
+                  : null,
+            ),
+            onChanged: (value) => setState(() {}),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: DropdownButtonFormField<String>(
+                  initialValue: _selectedCategory,
+                  decoration:
+                      const InputDecoration(labelText: 'Filter by category'),
+                  items: provider.categories
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
+                  onChanged: (value) =>
+                      setState(() => _selectedCategory = value!),
+                ),
+              ),
+              if (_selectedCategory != 'All')
+                IconButton(
+                  icon: const Icon(Icons.clear_all),
+                  onPressed: () => setState(() => _selectedCategory = 'All'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
+
+class _ProductListView extends StatelessWidget {
+  final GlobalKey<AnimatedListState> listKey;
+  final List<Product> products;
+
+  const _ProductListView({required this.listKey, required this.products});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedList(
+      key: listKey,
+      initialItemCount: products.length,
+      itemBuilder: (context, index, animation) {
+        return ProductListItem(
+          product: products[index],
+          animation: animation,
+        );
+      },
+    );
+  }
+}
+
+class _ProductGridView extends StatelessWidget {
+  final List<Product> products;
+
+  const _ProductGridView({required this.products});
+
+  @override
+  Widget build(BuildContext context) {
+    return GridView.builder(
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: Responsive.isTablet(context) ? 3 : 4,
+        childAspectRatio: 0.8,
+        crossAxisSpacing: 16,
+        mainAxisSpacing: 16,
+      ),
+      padding: const EdgeInsets.all(16.0),
+      itemCount: products.length,
+      itemBuilder: (context, index) {
+        return ProductGridItem(
+          product: products[index],
+          animation: kAlwaysCompleteAnimation, // Or a custom animation
+        );
+      },
+    );
+  }
+}
+
