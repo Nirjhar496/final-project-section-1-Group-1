@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:inventory/models/summary.dart';
 import 'package:inventory/providers/inventory_provider.dart';
 import 'package:inventory/widgets/pie_chart_widget.dart';
 import 'package:inventory/widgets/responsive.dart';
@@ -79,31 +80,31 @@ class DashboardScreen extends StatelessWidget {
 
   Widget _buildSummaryGrid(BuildContext context, InventoryProvider provider) {
     final summaryItems = [
-      {
-        'title': 'Total Products',
-        'value': provider.totalProducts.toString(),
-        'icon': Icons.inventory_2_outlined,
-        'color': Colors.blue,
-      },
-      {
-        'title': 'Total Quantity',
-        'value': provider.totalQuantity.toString(),
-        'icon': Icons.format_list_numbered,
-        'color': Colors.green,
-      },
-      {
-        'title': 'Low Stock',
-        'value':
+      SummaryInfo(
+        title: 'Total Products',
+        value: provider.totalProducts.toString(),
+        icon: Icons.inventory_2_outlined,
+        color: Colors.blue,
+      ),
+      SummaryInfo(
+        title: 'Total Quantity',
+        value: provider.totalQuantity.toString(),
+        icon: Icons.format_list_numbered,
+        color: Colors.green,
+      ),
+      SummaryInfo(
+        title: 'Low Stock',
+        value:
             provider.products.where((p) => p.isLowStock).length.toString(),
-        'icon': Icons.warning_amber_outlined,
-        'color': Colors.orange,
-      },
-      {
-        'title': 'Out of Stock',
-        'value': provider.outOfStockProducts.toString(),
-        'icon': Icons.error_outline,
-        'color': Colors.red,
-      },
+        icon: Icons.warning_amber_outlined,
+        color: Colors.orange,
+      ),
+      SummaryInfo(
+        title: 'Out of Stock',
+        value: provider.outOfStockProducts.toString(),
+        icon: Icons.error_outline,
+        color: Colors.red,
+      ),
     ];
 
     return GridView.builder(
@@ -119,10 +120,10 @@ class DashboardScreen extends StatelessWidget {
       itemBuilder: (context, index) {
         final item = summaryItems[index];
         return SummaryCard(
-          title: item['title'] as String,
-          value: item['value'] as String,
-          icon: item['icon'] as IconData,
-          color: item['color'] as Color,
+          title: item.title,
+          value: item.value,
+          icon: item.icon,
+          color: item.color,
         );
       },
     );

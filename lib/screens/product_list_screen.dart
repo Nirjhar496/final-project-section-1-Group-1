@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:inventory/providers/inventory_provider.dart';
 import 'package:inventory/widgets/add_edit_product_sheet.dart';
 import 'package:inventory/widgets/product_grid_item.dart';
@@ -17,7 +18,6 @@ class ProductListScreen extends StatefulWidget {
 class _ProductListScreenState extends State<ProductListScreen> {
   final _searchController = TextEditingController();
   String _selectedCategory = 'All';
-  final _listKey = GlobalKey<AnimatedListState>();
 
   @override
   void dispose() {
@@ -80,8 +80,7 @@ class _ProductListScreenState extends State<ProductListScreen> {
           child: filteredProducts.isEmpty
               ? const Center(child: Text('No products found.'))
               : Responsive(
-                  mobile: _ProductListView(
-                      listKey: _listKey, products: filteredProducts),
+                  mobile: _ProductListView(products: filteredProducts),
                   tablet: _ProductGridView(products: filteredProducts),
                 ),
         ),
@@ -120,7 +119,13 @@ class _ProductListScreenState extends State<ProductListScreen> {
                   decoration:
                       const InputDecoration(labelText: 'Filter by category'),
                   items: provider.categories
-                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .map((c) => DropdownMenuItem(
+                            value: c,
+                            child: Text(
+                              c,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ))
                       .toList(),
                   onChanged: (value) =>
                       setState(() => _selectedCategory = value!),
@@ -140,22 +145,28 @@ class _ProductListScreenState extends State<ProductListScreen> {
 }
 
 class _ProductListView extends StatelessWidget {
-  final GlobalKey<AnimatedListState> listKey;
   final List<Product> products;
 
-  const _ProductListView({required this.listKey, required this.products});
+  const _ProductListView({required this.products});
 
   @override
   Widget build(BuildContext context) {
-    return AnimatedList(
-      key: listKey,
-      initialItemCount: products.length,
-      itemBuilder: (context, index, animation) {
-        return ProductListItem(
-          product: products[index],
-          animation: animation,
-        );
-      },
+    return AnimationLimiter(
+      child: ListView.builder(
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return AnimationConfiguration.staggeredList(
+            position: index,
+            duration: const Duration(milliseconds: 375),
+            child: SlideAnimation(
+              verticalOffset: 50.0,
+              child: FadeInAnimation(
+                child: ProductListItem(product: products[index]),
+              ),
+            ),
+          );
+        },
+      ),
     );
   }
 }
@@ -167,21 +178,29 @@ class _ProductGridView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: Responsive.isTablet(context) ? 3 : 4,
-        childAspectRatio: 0.8,
-        crossAxisSpacing: 16,
-        mainAxisSpacing: 16,
+    return AnimationLimiter(
+      child: GridView.builder(
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: Responsive.isTablet(context) ? 3 : 4,
+          childAspectRatio: 0.8,
+          crossAxisSpacing: 16,
+          mainAxisSpacing: 16,
+        ),
+        padding: const EdgeInsets.all(16.0),
+        itemCount: products.length,
+        itemBuilder: (context, index) {
+          return AnimationConfiguration.staggeredGrid(
+            position: index,
+            columnCount: Responsive.isTablet(context) ? 3 : 4,
+            duration: const Duration(milliseconds: 375),
+            child: ScaleAnimation(
+              child: FadeInAnimation(
+                child: ProductGridItem(product: products[index]),
+              ),
+            ),
+          );
+        },
       ),
-      padding: const EdgeInsets.all(16.0),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        return ProductGridItem(
-          product: products[index],
-          animation: kAlwaysCompleteAnimation, // Or a custom animation
-        );
-      },
     );
   }
 }
